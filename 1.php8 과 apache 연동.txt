@@ -1,0 +1,46 @@
+vs16 으로 아파치 설치
+스레드 세이프로 php설치
+
+아파치 설정
+C:\APM\Apache24\conf 의 httpd.conf를 열어서 몇가지 수정하기 (C드라이브에 APM이라는 폴더를 만들었음.)
+서버루트 설정 (Define SRVROOT 경로 설정)
+Define SRVROOT "C:\APM\Apache24" 이렇게 바꿔주고
+
+아파치를 켜본다. (밑은 키는법)
+cd c:\Apache24\bin
+httpd.exe -k install   (아파치 서버삭제 httpd.exe -k uninstall)
+httpd -n "Apache2.4" -t  (httpd.cinf Syntax 정상적인지 체크)
+httpd -k start  (httpd -k restart 다시시작)
+(아파치 명령어는 https://httpd.apache.org/docs/2.4/ko/platform/windows.html 확인)
+이후 localhost 혹은 127.0.0.1로 들어가 it work 가 뜨는지 확인
+(만약 둘다 안될경우에는 windows>system32>driver>etc>hosts 에 있는 파일 내용을 바꿔보자. 인터넷에 내용 많이있다.)
+(그리고 그래도 안되면 윈도우 IIS를 킨거이던가, 아니면 포트80을 이미 어떤 무언가가 잡아먹고 있는것 등등의 오류범위가 넓다 알아서 해결하자)
+(만약 둘중 하나만 안된다면 포맷을 권장한다. 본인은 이거 해결 못했다. 찜찜하더라도 그냥 사용하려면 사용해도 상관없을듯?)
+
+
+php 설정
+php.ini-production 들어가서 수정이후 php.ini로 저장 (처음에는 당연히 없음 수정후 생긴 파일)
+1.  ; extension_dir = "./" 찾아서 ; (주석)삭제이후 extension_dir = "C:\APM\php8\ext"  경로입력
+
+2. 아파치와 php를 연동해야함.
+C:\APM\Apache24\conf 에 있는 httpd.conf 파일열고 DirectoryIndex에 index.php을 추가
+
+<IfModule dir_module>
+    DirectoryIndex index.php index.html
+</IfModule>
+
+이런식임.
+그리고 마지막에
+PHPIniDir "C:\APM\php8"
+LoadModule php_module "C:\APM\php8\php8apache2_4.dll"
+AddType application/x-httpd-php .html .php
+AddHandler application/x-httpd-php .php
+이 4줄을 추가한다.
+
+이후 C:\Apache24\htdocs 폴더에 phpinfo.php 에 파일 만들고
+<?php
+
+phpinfo();
+
+?>
+작성 후 인터넷에 localhost/phpinfo.php로 확인하자. (php관련 페이지가 뜨면 성공)

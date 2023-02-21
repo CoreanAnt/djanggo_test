@@ -1,0 +1,553 @@
+PDO 문법
+
+예제1: 서버연결
+<?php
+    $dbHost = "localhost";    // 호스트 주소(localhost, 120.0.0.1)
+    $dbName = "test";      // 데이타 베이스(DataBase) 이름
+    $dbUser = "root";       // DB 아이디
+    $dbPass = "123";       // DB 패스워드
+    $dbChar = "utf8";         // 문자 인코딩
+ 
+    // PDO 객체 생성 & DB 접속
+    $pdo = new PDO("mysql:host={$dbHost};dbname={$dbName};charset={$dbChar}", $dbUser, $dbPass);
+ 
+    // 쿼리를 담은 PDOStatement 객체 생성
+    $stmt = $pdo->prepare("SELECT * FROM test WHERE name = :name");
+ 
+    // PDOStatement 객체가 가진 쿼리의 파라메터에 변수 값을 바인드
+    $stmt->bindValue(":name", "Lee");
+ 
+    // PDOStatement 객체가 가진 쿼리를 실행
+    $stmt->execute();
+ 
+    // PDOStatement 객체가 실행한 쿼리의 결과값 가져오기
+    $row = $stmt->fetch();
+ 
+    echo "<pre>";
+    print_r($row);
+    echo "</pre>";
+?>
+
+$변수 = new PDO("데이터베이스 종류:host=호스트;port=포트dbname=데이터베이스;charset=인코딩", 계정, 암호);
+	(mysql 특정 데이터베이스 호출)
+
+$pdo = new PDO("mysql:host={$dbHost};dbname={$dbName};charset={$dbChar}", $dbUser, $dbPass);
+이 코드는
+$dsn = "mysql:host={$dbHost};dbname={$dbName};charset={$dbChar}";
+$pdo = new PDO($dsn, $dbUser, $dbPass);
+이런식으로 짜도 됨.
+
+
+
+예제2:  예외처리
+<?php
+    $servername = "localhost"; // 호스트 주소(localhost, 120.0.0.1)
+    $dbname = "test";  // 데이타 베이스(DataBase) 이름
+    $user = "root"; // DB 아이디
+    $password = "123"; // DB 패스워드
+    //$port = '3306';
+
+    try
+    {
+       // 서버 이름, 데이터베이스 이름, 사용자명과 비밀번호를 전달하여 새로운 PDO 객체를 생성
+       $connect = new PDO("mysql:host=$servername;dbname=$dbname", $user, $password);
+
+       $connect->setAttribute(PDO::ATTR_EMULATE_PREPARES, false); //prepare 사용 안 할 거면 그냥 이렇게 사용해야 합니다.
+       
+       // 생성된 PDO 객체에 에러 모드(error mode)를 설정
+       // 이렇게 에러 모드를 설정하면, PDO 생성자는 에러가 발생할 때마다 PDOException 예외를 던질 것이다.
+       $connect->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+       echo "서버와의 연결 성공!";
+    }
+    catch(PDOException $ex)
+    {
+        echo "서버와의 연결 실패! : ".$ex->getMessage()."<br>";
+    }
+?>
+
+PDO::ATTR_EMULATE_PREPARES : 
+이 속성은 Preppared Statement 를 데이터베이스가 지원 하지 않을 경우 에뮬레이션 하는 기능으로 false를 지정해서 데이터베이스의 기능을 사용하도록 한다.
+preppared statement란 그냥 더욱 안전하게 사용할 수 있게 해주는 것이라 생각하면 편하다. (준비를 거쳐 각 셀로 보관한다는 개념)
+(그냥 statement는 보안에 문제가 있음(인젝션) 
+(해커가 쿼리문에 부적절한 값을 입력하여 데이터베이스의 정보를 손상시키거나 민감한 정보를 탈취하는 것을 SQL injection이라고 한다.)
+아마 prepare을 사용하면 안써도 될 것이다.
+
+- PDO::ATTR_ERRMODE : 이 속성은 PDO 객체가 에러를 처리하는 방식을 결정한다. 
+PDO::ERRMODE_EXCEPTION 은 에러가 발행했을때 PDOException 을 throw 하도록합니다. 
+이 경우 try {} catch{} 를 사용하여 에러를 처리하면 됩니다. 
+다른 방법으로는 PDO::ERRMODE_SILENT(에러 코드만 설정), PDO::ERRMODE_WARNING(E_WARNING 발생)이 있습니다.
+
+
+
+예제3: 쿼리준비
+
+<?php
+    $dbHost = "localhost";    // 호스트 주소(localhost, 120.0.0.1)
+    $dbName = "test";      // 데이타 베이스(DataBase) 이름
+    $dbUser = "root";       // DB 아이디
+    $dbPass = "123";       // DB 패스워드
+    $dbChar = "utf8";         // 문자 인코딩
+ 
+    // PDO 객체 생성 & DB 접속
+    $pdo = new PDO("mysql:host={$dbHost};dbname={$dbName};charset={$dbChar}", $dbUser, $dbPass);
+ 
+    // 쿼리를 담은 PDOStatement 객체 생성
+    $stmt = $pdo->prepare("SELECT * FROM test WHERE name = :name AND id=:id");
+ 
+    // PDOStatement 객체가 가진 쿼리의 파라메터에 변수 값을 바인드
+    $stmt->bindValue(":name", "Lee");
+    $stmt->bindValue(":id", "111");
+ 
+    // PDOStatement 객체가 가진 쿼리를 실행
+    $stmt->execute();
+ 
+    // PDOStatement 객체가 실행한 쿼리의 결과값 가져오기
+    $row = $stmt->fetch();
+ 
+    echo "<pre>";
+    print_r($row);
+    echo "</pre>";
+?>
+
+ 조금 더 분석해보면
+      // 이름 붙인 파라미터를 사용할 때
+      $pdoStatement = $pdo -> prepare("SELECT * FROM member WHERE name = :name OR email = :email");
+      $pdoStatement = bindValue(":name", $name);
+      $pdoStatement = bindValue(":email", $email);
+
+
+      // 물음표를 사용할때 파라미터가 많아지면 물음표(?)의 경우 순서를 파악하기 어려워 진다.
+      $pdoStatement = $pdo -> prepare("SELECT * FROM member WHERE name = ? OR email = ?");
+      $pdoStatement = bindValue(1, $name);
+      $pdoStatement = bindValue(2, $email);
+?>
+
+① PDO::prepare로 준비하는 SQL구문은 파라미터를 가질 수 있다.
+② 파라미터는 이름을 붙여주거나 물음표로 표시할 수 있다.
+③ 이름을 붙인 파라미터는 위의 예제에서 보듯이 이름 앞에 : 를 붙여서 만든다.
+④ 하나의 SQL 문장에 여러 파라미터가 있는 경우 모두 이름을 붙여주거나 모두 물음표로 표기해야 한다.
+   (물음표보다는 이름을 붙인 파라미터가 내용을 이해하기 쉬우므로 될 수 있는대로 이름을 붙인 파라미터를 상용하는 것이 좋다.)
+
+
+
+예제4: bindParam와 bindValue의 차이
+
+앞에는 당연히 이 코드를 주가 해줘야한다. (객체생성과 접속은 해야함)
+
+    $dbHost = "localhost";    // 호스트 주소(localhost, 120.0.0.1)
+    $dbName = "test";      // 데이타 베이스(DataBase) 이름
+    $dbUser = "root";       // DB 아이디
+    $dbPass = "123";       // DB 패스워드
+    $dbChar = "utf8";         // 문자 인코딩
+ 
+    // PDO 객체 생성 & DB 접속
+    $pdo = new PDO("mysql:host={$dbHost};dbname={$dbName};charset={$dbChar}", $dbUser, $dbPass);
+
+
+bindValue (사용코드)
+<?php
+    $name = "Lee";
+
+    $stmt = $pdo -> prepare("SELECT * FROM test WHERE name = :name");
+
+    $stmt -> bindValue(":name", $name); // 변수에 바인딩 하기 위해 bindValue을 사용
+    $name = "Park"; // 쿼리를 실행하기전에 $name 변수의 값을 변경한다.
+    $stmt -> execute(); // WHERE name = "Lee"으로 실행된다.
+    $row = $stmt -> fetch(); // 객체가 실행한 쿼리의 결과값 가져오기
+
+    echo "<pre>";
+    print_r($row);
+    echo "</pre>";
+?>
+
+bindParam (사용코드)
+<?php
+    $name = "Lee";
+
+    $stmt = $pdo -> prepare("SELECT * FROM test WHERE name = :name");
+
+    $stmt -> bindParam(":name", $name); // 변수에 바인딩 하기 위해 bindParam을 사용
+    $name = "Park"; // 쿼리를 실행하기전에 $name 변수의 값을 변경한다.
+    $stmt -> execute(); // WHERE name = "Park"으로 실행된다.
+    $row = $stmt -> fetch(); // 객체가 실행한 쿼리의 결과값 가져오기
+
+    echo "<pre>";
+    print_r($row);
+    echo "</pre>";
+?>
+
+bindParam와 bindValue의 차이 ( PDOStatement::bindParam 또는 PDOStatement::bindValue를 주로 사용한다.)
+bindnParam은 참조(포인터)의 값이 들어간다. (다시 말하자면 바인딩 한 이후 값을 변경할 수 있음.) (즉 excute 호출시 변수에 있던 값이 들어감.) (변수 대입)
+bindValue에는 값만 복사된다. (바인딩 한 이후 값을 넣어도 반영이 되지 않음.) (즉 호출시 value에는 안들어감.) (값 대입)
+그로므로 파라미터 값을 변경하는 반복작업에서는 bindParam을 사용한다. (즉 bindParam은 변수를 대입한것이기 때문에 대입한 이후에 값을 변경할 수 있다.)
+
+
+
+예제5: 쿼리실행
+
+<?php
+    $dbHost = "localhost";    // 호스트 주소(localhost, 120.0.0.1)
+    $dbName = "test";      // 데이타 베이스(DataBase) 이름
+    $dbUser = "root";       // DB 아이디
+    $dbPass = "123";       // DB 패스워드
+    $dbChar = "utf8";         // 문자 인코딩
+ 
+    // PDO 객체 생성 & DB 접속
+    $pdo = new PDO("mysql:host={$dbHost};dbname={$dbName};charset={$dbChar}", $dbUser, $dbPass);
+
+    // 쿼리를 담은 PDOStatement 객체 생성
+    $pdoStatement = $pdo->prepare("SELECT * FROM test WHERE name = :name");
+ 
+    // PDOStatement 객체가 가진 쿼리의 파라메터에 변수 값을 바인드
+    $pdoStatement -> bindValue(":name", "Lee");
+ 
+    // PDOStatement 객체가 가진 쿼리를 실행
+    $pdoStatement -> execute();
+ 
+    // PDOStatement 객체가 실행한 쿼리의 결과값 가져오기
+    $row = $pdoStatement->fetch();
+ 
+    echo "<pre>";
+    print_r($row);
+    echo "</pre>";
+?>
+
+혹은
+
+<?php
+    $dbHost = "localhost";    // 호스트 주소(localhost, 120.0.0.1)
+    $dbName = "test";      // 데이타 베이스(DataBase) 이름
+    $dbUser = "root";       // DB 아이디
+    $dbPass = "123";       // DB 패스워드
+    $dbChar = "utf8";         // 문자 인코딩
+ 
+    // PDO 객체 생성 & DB 접속
+    $pdo = new PDO("mysql:host={$dbHost};dbname={$dbName};charset={$dbChar}", $dbUser, $dbPass);
+ 
+    // 쿼리를 담은 PDOStatement 객체 생성
+    $pdoStatement = $pdo->prepare("SELECT * FROM test WHERE name = ?");
+    $pdoStatement -> bindValue(1, "Lee");
+    $pdoStatement -> execute();
+ 
+    // PDOStatement 객체가 실행한 쿼리의 결과값 가져오기
+    $row = $pdoStatement ->fetch();
+ 
+    echo "<pre>";
+    print_r($row);
+    echo "</pre>";
+?>
+
+예제3과 거희 동일
+PDOStatement::execute() 메소드는 쿼리 실행이 성공했는지만 되돌려준다.
+쿼리 실행 결과를 되돌려주지않는다는 점에 주의해야 한다.
+그러므로 밑에 더 추가한것.
+
+
+
+예제6: PDOStatement:fetch() 메소드 실행하면 쿼리 경과에서 한 행을 가져온다.
+그러므로 다음과 같은 반복문으로 모든 행을 가져와서 처리하는 경우가 많다.
+
+<?
+    $dbHost = "localhost";
+    $dbName = "test";
+    $dbUser = "root";
+    $dbPass = "123";
+    $dbChar = "utf8";
+
+    $dsn = "mysql:host={$dbHost};dbname={$dbName};charset={$dbChar}";
+    $pdo = new PDO($dsn, $dbUser, $dbPass);
+
+    $name = "Kim";
+
+    $stmt = $pdo -> prepare("SELECT * FROM test WHERE name = :name");
+    $stmt -> bindValue(":name", $name);
+    $stmt -> execute();
+
+    $result = array();
+    while($row = $stmt -> fetch()) {
+ $result[] = $row;
+    }
+
+    echo "<pre>";
+    print_r($result);
+    echo "</pre>";
+?>
+
+또한 모든 행을 가져오고자 할때는 PDOStatement::fetchAll() 메소드를 사용한다.
+
+<?php
+    $dbHost = "localhost";
+    $dbName = "test";
+    $dbUser = "root";
+    $dbPass = "123";
+    $dbChar = "utf8";
+
+
+    $dsn = "mysql:host={$dbHost};dbname={$dbName};charset={$dbChar}";
+    $pdo = new PDO($dsn, $dbUser, $dbPass);
+
+    $job = "play";
+
+    $stmt = $pdo -> prepare("SELECT * FROM test WHERE job = :job");
+    $stmt -> bindValue(":job", $job);
+    $stmt -> execute();
+    
+    $result = $stmt -> fetchAll();
+
+    echo "<pre>";
+    print_r($result);
+    echo "</pre>";
+?>
+
+이걸 사용할때는 메모리 부족으로 웹서버가 다운될 수 있으므로 조회결과가 적다는 확신이 있을 때에만 신중하게 해야한다.
+
+
+
+
+예제6 : 출력값 모드 지정
+fetch() 괄호 안에 모드를 설정해준다.
+아무것도 안 적으면 PDO::FETCH_BOTH 두 배열을 다 만들기에 성능이 좋지 않다. (왠만해서는 모드 지정하자.) 자세한 설명은 아래에
+
+1. PDO::FETCH_ASSOC
+ -. 컬럼명을 키로 사용하는 연관 배열을 반환한다.
+ -. 가져온 데이터는 $row['id']와 같은 식드로 사용한다.
+
+<?php
+        $dbHost = "localhost";
+        $dbName = "test";
+        $dbUser = "root";
+        $dbPass = "123";
+        $dbChar = "utf8";
+
+        $dsn = "mysql:host={$dbHost};dbname={$dbName};charset={$dbChar}";
+        $pdo = new PDO($dsn, $dbUser, $dbPass);
+
+        $stmt = $pdo -> prepare("SELECT * FROM test WHERE name = :name");
+        $stmt -> bindValue(":name", "Lee");
+        $stmt -> execute();
+
+        $row = $stmt -> fetch(PDO::FETCH_ASSOC);
+
+
+ echo "아이디&nbsp;:&nbsp;".$row['id'];
+ echo "<br/>";
+ echo "이름&nbsp;:&nbsp;".$row['name'];
+ echo "<br/>";
+ echo "직업&nbsp;:&nbsp;".$row['job'];
+ echo "<br/>";
+?>
+
+종류들:
+PDO::FETCH_NUM : 숫자 인덱스 배열 반환 (즉 칼럼의 순서가 키 ex: $row[0])
+PDO::FETCH_ASSOC : 컬럼명이 키인 연관배열 반환 (즉 갈럼명이 키 ex: $row['id'])
+PDO::FETCH_BOTH : 위 두가지 모두 (기본 값)
+
+PDO::FETCH_OBJ: 여러분의 결과에서 반환되는 열 이름에 해당하는 프로퍼티 이름으로 익명 객체를 반환한다. 예를 들어 $row->id는 id 열 값을 가지고 있다.
+PDO::FETCH_CLASS: 요청된 클래스에서 명명된 프로퍼티에 결과 값 열을 매핑한 요청 클래스의 인스턴스를 반환한다. 
+만약 fetch_style이 PDO::FETCH_CLASSTYPE (예: PDO::FETCH_CLASS | PDO::FETCH_CLASSTYPE) 을 포함하면 클래스 이름은 첫번째 열 값에서 결정된다. 
+기억할지 모르지만 우리는 가장 간단한 폼 형태로 PDO가 사용자 정의 클래스로 열 이름을 매핑할 수 있다고 지적했다. 이 상수는 해당 작업을 수행할 때 사용하는 것이다.
+
+2. 클래스 사용예시
+
+<?php
+ class user {
+    private $id;
+    private $name;
+    private $job;
+   
+   
+    public function getId() {
+    return $this -> id;
+    }
+   
+    public function getName() {
+    return $this -> name;
+    }
+   
+    public function getJob() {
+    return $this -> job;
+    }
+    }
+
+
+        $dbHost = "localhost";
+        $dbName = "test";
+        $dbUser = "root";
+        $dbPass = "123";
+        $dbChar = "utf8";
+
+        $dsn = "mysql:host={$dbHost};dbname={$dbName};charset={$dbChar}";
+        $pdo = new PDO($dsn, $dbUser, $dbPass);
+
+        $stmt = $pdo -> prepare("SELECT * FROM test WHERE name = :name");
+        $stmt -> bindValue(":name", "Lee");
+        $stmt -> execute();
+    
+ $stmt -> setFetchMode(PDO::FETCH_CLASS, "user");
+ $row = $stmt -> fetch();
+
+
+ echo $row -> getId();
+ echo "<br/>";
+ echo $row -> getName();
+ echo "<br/>";
+ echo $row -> getJob();
+ echo "<br/>";
+?>
+
+
+
+3. PDOStatement::fetchColumn() (결과값중 하나의 컬럼값만 가져오는 메소드, 데이터수를 조회할 경우처럼 단 하나의 컬럼값만 필요한 경우 유용하게 사용)
+
+<?php
+        $dbHost = "localhost";
+        $dbName = "test";
+        $dbUser = "root";
+        $dbPass = "123";
+        $dbChar = "utf8";
+
+        $dsn = "mysql:host={$dbHost};dbname={$dbName};charset={$dbChar}";
+        $pdo = new PDO($dsn, $dbUser, $dbPass);
+
+
+        $stmt = $pdo -> prepare("SELECT COUNT(*) AS count FROM test WHERE job = :job");
+        $stmt -> bindValue(":job", "play");
+        $stmt -> execute();
+
+
+        $row = $stmt -> fetchColumn();
+
+
+ echo "직업play라는&nbsp;인원&nbsp;:&nbsp;".$row;
+?>
+
+&nbsp의미: 띄어쓰기 메소드
+
+4. PDO:lastInsertId() 데이터베이스에 새로운 데이터를 입력하고 id 혹은 index값을 바로 사용해야 하는경우,
+   PDO::lastInsertId()를 객체를 이용하면 마지막으로 입력한 데이터의 id 혹은 index 값을 확인 할 수 있다.
+※ PDOStatement가 아닌 PDO 객체를 사용하는것에 주의
+
+<?php
+        $dbHost = "localhost";
+        $dbName = "test";
+        $dbUser = "root";
+        $dbPass = "123";
+        $dbChar = "utf8";
+
+
+        $dsn = "mysql:host={$dbHost};dbname={$dbName};charset={$dbChar}";
+        $pdo = new PDO($dsn, $dbUser, $dbPass);
+
+
+        $stmt = $pdo -> prepare("
+              INSERT INTO girl_group (id, name, job)
+              VALUE (:id, :name, :job)
+        ");
+
+
+ $stmt -> bindValue(":name", "정채연");
+ $stmt -> bindValue(":id", "666");
+        $stmt -> bindValue(":job", "singer");
+        $stmt -> execute();
+
+
+        $taskIdx = $pdo -> lastInsertId();
+
+
+ echo "정채연&nbsp;등록번호&nbsp;:&nbsp;".$taskIdx;
+?>
+
+auto_increment를 사용해야 번호가 올라는 것을 볼 수 있다. (위 코드로 실행했을때 데이터베이스 ID의 pk가 자동 올라가기가 아니기에 계속 0으로 뜬다.)
+last_insert_id 함수는 테이블의 마지막 auto_increment 값을 리턴한다.
+
+----------------
+
+여기서부터는 기타 추가 설명
+
+$query = "SELECT COUNT(*) AS cnt FROM member WHERE member_id = ?"; 
+$result = $con->prepare($query); 
+$result->execute(array($member_id)); 
+$row = $result->fetchAll(PDO::FETCH_NUM);
+
+인젝션 방어를 위해서 PDO에서는 placeholder를 사용하는데, 변수가 들어갈 곳에 ?를 넣는다.
+그리고 스테이트먼트를 생성하고, 배열을 통해 변수 값을 ?에 순서에 맞게 집어넣는다.
+
+변수가 없을경우에는
+$query = "SELECT COUNT(*) AS cnt FROM member"; 
+$result = $con->prepare($query); 
+$result->execute(); 
+$row = $result->fetchAll(PDO::FETCH_NUM);
+이렇게 써도 무방하다.
+
+
+$statement = $connection->prepare('Select * FROM users WHERE name = :name');
+$results = $connection->execute([
+    ':name' => $name
+]);
+이 코드랑
+$statement = $connection->prepare('SELECT * FROM users WHERE name = ?');
+$results = $connection->execute([$name]);
+이코드는 같다. (단지 명명되지 않은 제공 파라미터를 사용했을 뿐.)
+
+
+=> (이중화살표 연산자) : 왼쪽에 있는 배열정보에서 오른쪽에 있는 것에 상응하는 값을 가질 것임을 의미.
+ex :$myArray = array(
+    0 => 'Big',
+    1 => 'Small',
+    2 => 'Up',
+    3 => 'Down'
+);
+
+->(개체 연산자) 개체 번위에서 개체의 메서드와 속성에 액세스하는데 사용. (즉 연산자의 오른쪽에 있는 것을 연산자 왼쪽에 있는 변수로 인스턴스화 된 객체의 멤버로 영입한다는 뜻.)
+// $obj에 MyObject의 새 인스턴스 생성
+$obj = new MyObject();
+// $obj 개체에서 thisProperty이라는 속성 설정
+$obj->thisProperty = 'Fred';
+// getProperty라는 $obj 개체의 메서드를 호출합니다.
+$obj->getProperty();
+
+
+
+Placeholder : PDO는 SQL 인젝션을 방지하기 위해 prepare와 placeholder를 사용합니다.
+
+// placeholder 없음. SQL 인젝션의 위험이 있음.
+$st = $pdo->("INSERT INTO table (col1, col2, col3) values ($val1, $val2, $val3)");
+ 
+// 이름 없는 placeholder. SQL 인젝션 방지.
+$st = $pdo->('INSERT INTO table (col1, col2, col3) values (?, ?, ?)');
+// 값을 넘겨주고 실행
+$st->execute(['val1', 'val2', 'val2']);
+  
+// 이름 있는 placeholder. SQL 인젝션 방지
+$st = $pdo->("INSERT INTO table (col1, col2, col3) value (:col1, :col2, :col3)");
+// 값을 넘겨주고 실행
+$st->execute([':col1'=>'val1', ':col2'=>'val2', ':col3'=>'val3']);
+
+
+
+조회하는 다른 방법
+<?php
+$dsn = "mysql:host=localhost;dbname=test;charset=utf8";
+try {
+	$db = new PDO($dsn, "root", "123");
+	$db->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+	$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+	
+	$keyword = "%L%";
+	$no = 1;
+	
+	$query = "SELECT name, id FROM test WHERE name LIKE ? AND id > ?";
+	$stmt = $db->prepare($query);
+	$stmt->execute(array($keyword, $no));
+	$result = $stmt->fetchAll(PDO::FETCH_NUM);
+	
+	for($i = 0; $i < count($result); $i++) {
+		printf ("%s : %s <br />", $result[$i][0], $result[$i][1]);
+	}
+    
+} catch(PDOException $e) {
+	echo $e->getMessage();
+}
+?>
+<!-- 조회하는 법 -->

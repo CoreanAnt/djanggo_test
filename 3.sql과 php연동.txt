@@ -1,0 +1,26 @@
+mysql설정
+php에서 mysql 접근위해 php.ini 파일 수정
+ ;extension=mysqli 앞에있는 ; 주석제거 (pdo 사용하려면 pdo 주석도 지워줘야한다. 알아서 확장하려면 더 확장!)
+서버네임도 바꿔주자 ServerName localhost
+
+덤은 Date 검색후 (php.ini)
+[Date]
+; Defines the default timezone used by the date functions
+; https://php.net/date.timezone
+;date.timezone = Asia/Seoul
+시간을 서울로 맞춰주자.
+
+이후 
+<?php
+ 
+$connect = mysqli_connect("localhost","root","123");
+ 
+if($connect->connect_errno){
+    echo '[연결실패..] : '.$connect->connect_error.'';
+}else{
+    echo '[연결성공!]'.'<br>';
+}
+ 
+?>
+
+위의 소스코드로 sql이 제대로 연동됐는지 확인한다. (뭐 수정할때마다 아파치 서버 재시작은 잊지말자.)
